@@ -2,6 +2,7 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 
 plugins {
     kotlin("multiplatform")
+    kotlin("native.cocoapods")
     id("com.android.library")
     id("com.apollographql.apollo3")
 }
@@ -9,14 +10,21 @@ plugins {
 kotlin {
     android()
 
-    listOf(
-        iosX64(),
-        iosArm64(),
-        iosSimulatorArm64()
-    ).forEach {
-        it.binaries.framework {
+    iosX64()
+    iosArm64()
+    iosSimulatorArm64()
+
+    version = "1.0"
+
+    cocoapods {
+        summary = "Some description for the Shared Module"
+        homepage = "Link to the Shared Module homepage"
+        ios.deploymentTarget = "15.0"
+        framework {
             baseName = "shared"
+            isStatic = true
         }
+        podfile = project.file("../iosApp/Podfile")
     }
 
     sourceSets {
@@ -67,7 +75,18 @@ kotlin {
             iosArm64Test.dependsOn(this)
             iosSimulatorArm64Test.dependsOn(this)
         }
+    }
 
+    // Configure the framework which is generated internally by cocoapods plugin
+    targets.withType<KotlinNativeTarget> {
+        binaries.withType<org.jetbrains.kotlin.gradle.plugin.mpp.Framework> {
+            transitiveExport = true
+        }
+
+        binaries.all {
+            // new memory model for native, to stop using coroutines-native-mt
+            binaryOptions["memoryModel"] = "experimental"
+        }
     }
 }
 
